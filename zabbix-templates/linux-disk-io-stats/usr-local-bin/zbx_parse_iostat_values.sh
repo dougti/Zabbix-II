@@ -53,7 +53,8 @@ if [ $iostats_lines -ne 1 ]; then
     exit 2
 fi
 
-echo $iostats
+newiostats=$(echo $iostats | sed 's/,/\./')
+echo $newiostats
 
 if [[ $debug -eq 1 ]]; then
     echo "- - - - - - - - - -"
