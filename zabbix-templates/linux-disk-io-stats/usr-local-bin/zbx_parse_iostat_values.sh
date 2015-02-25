@@ -36,7 +36,7 @@ do
             id="$"
             column_id_id=$id$column_id
 
-            iostats=`iostat -xN |egrep -o "^${dev}[[:space:]]+.*" |awk "{print ${column_id_id}}"`
+            iostats=`iostat -xNy 4 1 |egrep -o "^${dev}[[:space:]]+.*" |awk "{print ${column_id_id}}"`
         fi
     column_id=$[column_id + 1]
 done
@@ -59,7 +59,7 @@ echo $newiostats
 if [[ $debug -eq 1 ]]; then
     echo "- - - - - - - - - -"
     echo $columns
-    iostats_debug=`iostat -xN |egrep -o "^${dev}[[:space:]]+.*"`
+    iostats_debug=`iostat -xNy 4 1 |egrep -o "^${dev}[[:space:]]+.*"`
     echo $iostats_debug
     echo "- - - - - - - - - -"
 fi
