@@ -55,8 +55,8 @@ function process_share_1() {
       mounted=1;
     fi
     echo -e "\t\t\"{#SHARE_IS_MOUNTED}\":\"$mounted\",";
-    echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"$remote_share\",";
-    echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"$share_bind_subdir\",";
+    if [ -z "$remote_share" ]; then echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"nil\","; else echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"$remote_share\","; fi
+    if [ -z "$share_bind_subdir" ]; then echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"nil\","; else echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"$share_bind_subdir\","; fi
     echo -e "\t\t\"{#SHARE_REMOTE}\":\"$share_remote\"";
     echo -e "\t}";
   else
@@ -103,8 +103,8 @@ function process_share_2() {
       mounted=1;
     fi
     echo -e "\t\t\"{#SHARE_IS_MOUNTED}\":\"$mounted\",";
-    echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"$remote_share\",";
-    echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"$share_bind_subdir\",";
+    if [ -z "$remote_share" ]; then echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"nil\","; else echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"$remote_share\","; fi
+    if [ -z "$share_bind_subdir" ]; then echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"nil\","; else echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"$share_bind_subdir\","; fi
     echo -e "\t\t\"{#SHARE_REMOTE}\":\"$share_remote\"";
     echo -e "\t}";
     if ([ $myshare != "monitoringParkomats" ] && [ $myshare != "transactions" ]) || [ $count -lt $total ] ; then
