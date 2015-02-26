@@ -1,5 +1,8 @@
 #!/bin/bash
 
+declare total=0;
+declare count=1;
+
 function process_share_1() {
 #$1 = SHARE_NAME
   re=0
@@ -34,11 +37,24 @@ function process_share_1() {
       remote_share=""
     fi
 #    echo "f1(): SHARE_BIND_ROOT = $remote_share; SHARE_BIND_SUBDIR = $share_bind_subdir, SHARE_REMOTE = $share_remote, SHARE_PATH=$SHARE_PATH, SHARE_NAME=`basename $SHARE_PATH`"
-    echo "$FUNCNAME"
+#    echo "$FUNCNAME"
     echo -e "\t{";
     echo -e "\t\t\"{#SHARE_NAME}\":\"`basename $2`-`basename $SHARE_PATH`\",";
-    echo -e "\t\t\"{#SHARE_MUST_MOUNTED}\":\"1\",";
     echo -e "\t\t\"{#SHARE_PATH}\":\"$SHARE_PATH\",";
+    mounted=0;
+    mount | grep "$share_remote" > /dev/null 2>&1;
+    if [ $? -eq 0 ]; then
+      if [ ! -z "$remote_share" ] && [ ! -z $share_bind_subdir ]; then
+        share_bind_subdir=${share_bind_subdir%?}
+        mount | grep "$remote_share/$share_bind_subdir" > /dev/null 2>&1;
+        if [ $? -ne 0 ]; then
+          mounted=1;
+        fi
+      fi
+    else
+      mounted=1;
+    fi
+    echo -e "\t\t\"{#SHARE_IS_MOUNTED}\":\"$mounted\",";
     echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"$remote_share\",";
     echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"$share_bind_subdir\",";
     echo -e "\t\t\"{#SHARE_REMOTE}\":\"$share_remote\"";
@@ -59,15 +75,30 @@ function process_share_2() {
     share_path=`echo $share | awk '{print $2;}'`
     remote_share=""; share_bind_subdir="";
 #      echo "f2(): SHARE_BIND_ROOT = $remote_share; SHARE_BIND_SUBDIR = $share_bind_subdir, SHARE_REMOTE = $share_remote, SHARE_PATH=$share_path, SHARE_NAME=`basename $share_path`"
-    echo "$FUNCNAME"
+#    echo "$FUNCNAME"
+  if [ $app == "frontend_node" ]; then
+    mlist="reservations fines parkingFacts monitoringParkomats"
+  else
+    mlist="transactions"
+  fi
+  for myshare in $mlist; do
     echo -e "\t{";
-    echo -e "\t\t\"{#SHARE_NAME}\":\"`basename $2`-`basename $share_path`\",";
-    echo -e "\t\t\"{#SHARE_MUST_MOUNTED}\":\"1\",";
-    echo -e "\t\t\"{#SHARE_PATH}\":\"$share_path\",";
+    echo -e "\t\t\"{#SHARE_NAME}\":\"`basename $2`-$myshare\",";
+    if [ $app == "frontend_node" ]; then
+      echo -e "\t\t\"{#SHARE_PATH}\":\"$share_path{$myshare}\",";
+    else
+      echo -e "\t\t\"{#SHARE_PATH}\":\"$share_path$myshare\",";
+    fi
+    cat /proc/mounts | grep "$share_remote" > /dev/null 2>&1;
+    echo -e "\t\t\"{#SHARE_IS_MOUNTED}\":\"$?\",";
     echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"$remote_share\",";
     echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"$share_bind_subdir\",";
     echo -e "\t\t\"{#SHARE_REMOTE}\":\"$share_remote\"";
     echo -e "\t}";
+    if ([ $myshare != "monitoringParkomats" ] && [ $myshare != "transactions" ]) || [ $count -lt $total ] ; then
+      echo -e "\t,";
+    fi
+done
     else
       re=1
     fi
@@ -75,58 +106,44 @@ function process_share_2() {
 }
 
 echo -e "{";
-echo -e "\t\"data\":[\n";
+echo -e "\t\"data\":[";
 echo -e "\t";
 
 for user in `ls -d /var/www/*parking`; do
   if [ -d $user ]; then
-    process_share_1 "reservations" "$user"; a=$?;
-    process_share_1 "fines" "$user"; b=$?;
-    process_share_1 "parkingFacts" "$user"; c=$?;
-    process_share_1 "monitoringParkomats" "$user"; d=$?;
-    process_share_1 "transactions" "$user"; e=$?;
+    ((total++))
+  fi
+done
 
-    not_conn_buf=""
-    if [ $a -eq 1 ]; then
-#      temp="$user/frontend_node/data/integration/{reservations} not connected\n"
-      temp="\t{\n\t\t\"{#SHARE_NAME}\":\"$user-reservations\",\n\t\t\"{#SHARE_MUST_MOUNTED}\":\"0\",\n\t\t\"{#SHARE_PATH}\":\"$user/frontend_node/data/integration/reservations\",\n";
-      not_conn_buf="$not_conn_buf$temp"
-    fi
+for user in `ls -d /var/www/*parking`; do
+  if [ -d $user ]; then
+    process_share_1 "reservations" "$user"; a=$?; if [ $a -eq 0 ]; then share1=`grep "$user/frontend_node/data/integration/fines" /etc/fstab`; if [ ! -z "$share1" ]; then echo -e "\t,"; fi; fi
+    process_share_1 "fines" "$user"; b=$?; if [ $b -eq 0 ]; then share1=`grep "$user/frontend_node/data/integration/parkingFacts" /etc/fstab`; if [ ! -z "$share1" ]; then echo -e "\t,"; fi; fi
+    process_share_1 "parkingFacts" "$user"; c=$?; if [ $c -eq 0 ]; then share1=`grep "$user/frontend_node/data/integration/monitoringParkomats" /etc/fstab`; if [ ! -z "$share1" ]; then echo -e "\t,"; fi; fi
+    process_share_1 "monitoringParkomats" "$user"; d=$?; if [ $d -eq 0 ]; then share1=`grep "$user/payment/data/integration/transactions" /etc/fstab`; if [ ! -z "$share1" ]; then echo -e "\t,"; fi; fi
 
-    if [ $b -eq 1 ]; then
-#      temp="$user/frontend_node/data/integration/{fines} not connected\n"
-      temp="\t{\n\t\t\"{#SHARE_NAME}\":\"$user-fines\",\n\t\t\"{#SHARE_MUST_MOUNTED}\":\"0\",\n\t\t\"{#SHARE_PATH}\":\"$user/frontend_node/data/integration/fines\",\n";
-      not_conn_buf="$not_conn_buf$temp"
-    fi
-
-    if [ $c -eq 1 ]; then
-#      temp="$user/frontend_node/data/integration/{parkingFacts} not connected\n"
-      temp="\t{\n\t\t\"{#SHARE_NAME}\":\"$user-parkingFacts\",\n\t\t\"{#SHARE_MUST_MOUNTED}\":\"0\",\n\t\t\"{#SHARE_PATH}\":\"$user/frontend_node/data/integration/parkingFacts\",\n";
-      not_conn_buf="$not_conn_buf$temp"
-    fi
-
-    if [ $d -eq 1 ]; then
-#      temp="$user/frontend_node/data/integration/{monitoringParkomats} not connected\n"
-      temp="\t{\n\t\t\"{#SHARE_NAME}\":\"$user-monitoringParkomats\",\n\t\t\"{#SHARE_MUST_MOUNTED}\":\"0\",\n\t\t\"{#SHARE_PATH}\":\"$user/frontend_node/data/integration/monitoringParkomats\",\n";
-      not_conn_buf="$not_conn_buf$temp"
-    fi
-
+    k=0;
     if [ $a -eq 1 ] && [ $b -eq 1 ] && [ $c -eq 1 ] && [ $d -eq 1 ]; then
       process_share_2 "frontend_node" "$user"; k=$?;
-      if [ $k -eq 1 ]; then
-        SHARE_MUST_MOUNTED="No"
-      else
-        not_conn_buf=""
-      fi
+#      if [ $k -eq 1 ]; then
+#      else
+#        not_conn_buf=""
+#      fi
     fi
-    echo -e "$not_conn_buf";
+#    echo -e "$not_conn_buf";
+
+#	echo "count: $count; total: $total"
+    process_share_1 "transactions" "$user"; e=$?; if [ $e -eq 0 ] && [ $count -lt $total ]; then echo -e "\t,"; fi
 
     if [ $e -eq 1 ]; then
       process_share_2 "payment" "$user"; l=$?;
-      if [ $l -eq 1 ]; then
+#      if [ $l -eq 1 ]; then
 #        echo "$user/payment/data/integration/{transactions}: not connected"
-        echo -e "\t{\n\t\t\"{#SHARE_NAME}\":\"$user-transactions\",\n\t\t\"{#SHARE_MUST_MOUNTED}\":\"0\",\n\t\t\"{#SHARE_PATH}\":\"$user/frontend_node/data/integration/transactions\"\n";
-      fi
+#        echo -e "\t{\n\t\t\"{#SHARE_NAME}\":\"$user-transactions\",\n\t\t\"{#SHARE_MUST_MOUNTED}\":\"0\",\n\t\t\"{#SHARE_PATH}\":\"$user/frontend_node/data/integration/transactions\"\n";
+#      fi
     fi
+  ((count++))
   fi
 done
+
+echo -e "\t\n\t]\n}"
