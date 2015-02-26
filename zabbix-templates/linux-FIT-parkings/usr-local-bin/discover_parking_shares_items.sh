@@ -89,8 +89,20 @@ function process_share_2() {
     else
       echo -e "\t\t\"{#SHARE_PATH}\":\"$share_path$myshare\",";
     fi
-    cat /proc/mounts | grep "$share_remote" > /dev/null 2>&1;
-    echo -e "\t\t\"{#SHARE_IS_MOUNTED}\":\"$?\",";
+    mounted=0;
+    mount | grep "$share_remote" > /dev/null 2>&1;
+    if [ $? -eq 0 ]; then
+      if [ ! -z "$remote_share" ] && [ ! -z $share_bind_subdir ]; then
+        share_bind_subdir=${share_bind_subdir%?}
+        mount | grep "$remote_share/$share_bind_subdir" > /dev/null 2>&1;
+        if [ $? -ne 0 ]; then
+          mounted=1;
+        fi
+      fi
+    else
+      mounted=1;
+    fi
+    echo -e "\t\t\"{#SHARE_IS_MOUNTED}\":\"$mounted\",";
     echo -e "\t\t\"{#SHARE_BIND_ROOT}\":\"$remote_share\",";
     echo -e "\t\t\"{#SHARE_BIND_SUBDIR}\":\"$share_bind_subdir\",";
     echo -e "\t\t\"{#SHARE_REMOTE}\":\"$share_remote\"";
