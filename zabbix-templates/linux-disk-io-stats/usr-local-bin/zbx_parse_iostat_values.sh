@@ -17,7 +17,7 @@ if [[ -z "$type" ]]; then
   exit 1
 fi
 
-columns=`iostat -xN |egrep -o "^Device.*"`
+columns=`iostat -dmx|egrep -o "^Device.*"`
 
 columnsarray=($columns)
 
@@ -28,41 +28,15 @@ do
         #echo "column: $i"
 
         if [[ "$i" = "$type" ]]; then
-
-            if [[ $debug -eq 1 ]]; then
-                echo "right column (${i}) found...column_id: $column_id "
-            fi
-
-            id="$"
-            column_id_id=$id$column_id
-
-            iostats=`iostat -xNy 4 1 |egrep -o "^${dev}[[:space:]]+.*" |awk "{print ${column_id_id}}"`
+		break;
         fi
     column_id=$[column_id + 1]
 done
 
-if [ -z "$iostats" ]; then
-    echo "error: \"device\" or \"type\" not found (${dev},${type})"
-    exit 3
-fi
+id=$
+awk_id="$id$column_id"
 
-iostats_lines=`wc -l <<< "$iostats"`
-
-if [ $iostats_lines -ne 1 ]; then
-    echo "error: wrong output value (${iostats_lines})"
-    exit 2
-fi
-
-newiostats=$(echo $iostats | sed 's/,/\./')
-echo $newiostats
-
-if [[ $debug -eq 1 ]]; then
-    echo "- - - - - - - - - -"
-    echo $columns
-    iostats_debug=`iostat -xNy 4 1 |egrep -o "^${dev}[[:space:]]+.*"`
-    echo $iostats_debug
-    echo "- - - - - - - - - -"
-fi
+cat /var/lib/iostat-poller/stats | grep $1 | awk '{ print $awk_id; }'
 
 exit 0
 

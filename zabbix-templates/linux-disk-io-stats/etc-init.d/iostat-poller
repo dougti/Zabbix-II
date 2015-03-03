@@ -1,0 +1,78 @@
+#! /bin/bash
+#
+# iostat-poller      Start/Stop the poller script
+#
+# chkconfig: 345 71 40
+# description: iostat-poller is a script that runs iostat continously and 
+#              filters then stores the most recent report
+# processname: iostat-poller
+
+# Source function library.
+. /etc/init.d/functions
+path="/usr/local/sbin/iostat-poller"
+prog="$(basename ${path})"
+niceness=+5
+user=iostat
+pidfile="/var/lib/iostat-poller/iostat-poller.pid"
+RETVAL=0
+
+start() {
+        echo -n $"Starting $prog: "
+        pid=$(cat $pidfile 2>/dev/null)
+        if [ -n "$pid" ]
+        then
+                failure $"$prog startup"
+                echo
+                return 1
+        fi
+        daemon --pidfile=$pidfile --user=$user $niceness "$path --pidfile=$pidfile &"
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$prog
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Stopping $prog: "
+        pid=$(cat $pidfile 2>/dev/null)
+        if checkpid $pid
+        then
+                CHILDREN="$(ps --ppid $pid h o pid 2>/dev/null)"
+                kill -KILL $CHILDREN > /dev/null 2>&1
+                rm -f /var/lock/subsys/$prog
+                checkpid $pid && success $"$prog shutdown" || failure $"$prog shutdown"
+                RETVAL=$?
+        else
+                failure $"$prog shutdown"
+                RETVAL=1
+        fi
+        echo
+        return $RETVAL
+}
+restart() {
+        stop
+        start
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        restart
+        ;;
+  status)
+        status -p $pidfile $path
+        ;;
+  condrestart)
+        [ -f /var/lock/subsys/$prog ] && restart || :
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|restart|condrestart}"
+        exit 1
+esac
+
+exit $?
