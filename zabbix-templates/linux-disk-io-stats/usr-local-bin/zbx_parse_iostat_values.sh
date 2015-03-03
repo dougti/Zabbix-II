@@ -36,7 +36,7 @@ done
 id=$
 awk_id="$id$column_id"
 
-cat /var/lib/iostat-poller/stats | grep $1 | awk '{ print $awk_id; }'
+eval "cat /var/lib/iostat-poller/stats | grep $1 | awk '{ print $awk_id; }'"
 
 exit 0
 
