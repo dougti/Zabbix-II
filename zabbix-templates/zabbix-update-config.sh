@@ -13,3 +13,7 @@ mkdir /var/lib/iostat-poller &&
 useradd -r -d /var/lib/iostat-poller -s /bin/false iostat &&
 touch /var/lib/iostat-poller/stats &&
 chown -R iostat:iostat /var/lib/iostat-poller/ &&
+service zabbix-agent restart &&
+service iostat-poller start &&
+cat /var/lib/iostat-poller/stats &&
+chkconfig iostat-poller on
