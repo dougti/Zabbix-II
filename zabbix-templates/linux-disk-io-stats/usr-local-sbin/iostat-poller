@@ -82,5 +82,6 @@ do
                 echo -e "${STATS}" | sed -e 'N;s/\(^[^ ]*\)\(\n\)\(.*\)$/\1\3/'  | sed -e 's/  */ /g' > "${TMP_FILE}"
                 STATS=
                 mv "${TMP_FILE}" "${STAT_FILE}"
+		sed -i 's/,/\./g' "${STAT_FILE}"
         fi
 done
