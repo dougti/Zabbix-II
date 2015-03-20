@@ -36,6 +36,13 @@ case "$item" in
                 r=0
               fi
             fi
+            if [ "$app" == "sensors" ]; then
+              retvalue=$(curl -s -X PUT -H "Content-Type: application/json" -d '{"parkingIds": []}' http://localhost:$port/api/1.0/sensors/getparkingspaces) > /dev/null 2>&1
+              echo "x$retvalue" | grep spaces > /dev/null 2>&1
+              if [ $? -eq 0 ]; then
+                r=0
+              fi
+            fi
             ;;
         "custom1")
             if [ "$app" == "frontend_node" ]; then
