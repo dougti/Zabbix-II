@@ -21,27 +21,16 @@ if [[ -z "$item" ]]; then
   exit 1
 fi
 
-
 case "$item" in
         "alive")
-            if [ "$app" == "frontend_node" ]; then
-              http_status=$(curl -I http://localhost:$port/ 2>&1 | grep HTTP | awk '{print $2;}') > /dev/null 2>&1
-              if [ "x$http_status" == "x200" ]; then
-                r=0
-              fi
-            fi
             if [ "$app" == "payment" ]; then
-              http_status=$(curl -I http://localhost:$port/payment/system/balance/check/fd1202f92b2b6a743c61095b63058f57 2>&1 | grep HTTP | awk '{print $2;}') > /dev/null 2>&1
-              if [ "x$http_status" == "x200" ]; then
-                r=0
-              fi
+              cmd="curl http://localhost:$port/payment/system/stat --fail > /dev/null 2>&1;";
+            else
+              cmd="curl http://localhost:$port/system/stat --fail > /dev/null 2>&1;"
             fi
-            if [ "$app" == "sensors" ]; then
-              retvalue=$(curl -s -X PUT -H "Content-Type: application/json" -d '{"parkingIds": []}' http://localhost:$port/api/1.0/sensors/getparkingspaces) > /dev/null 2>&1
-              echo "x$retvalue" | grep spaces > /dev/null 2>&1
-              if [ $? -eq 0 ]; then
-                r=0
-              fi
+            eval "$cmd";
+            if [ "$?" == "0" ]; then
+              r=0
             fi
             ;;
         "custom1")
