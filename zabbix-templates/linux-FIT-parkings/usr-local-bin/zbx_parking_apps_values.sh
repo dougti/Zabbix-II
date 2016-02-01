@@ -23,11 +23,7 @@ fi
 
 case "$item" in
         "alive")
-            if [ "$app" == "payment" ]; then
-              cmd="curl http://localhost:$port/payment/system/stat --fail > /dev/null 2>&1;";
-            else
-              cmd="curl http://localhost:$port/system/stat --fail > /dev/null 2>&1;"
-            fi
+            cmd="curl http://localhost:$port/system/stat --fail > /dev/null 2>&1;"
             eval "$cmd";
             if [ "$?" == "0" ]; then
               r=0
